@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Football Betting Predictor</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+</head>
+<body>
+  <div class="container">
+
+    <header>
+      <h1>⚽ Football Betting Predictor</h1>
+      <p class="subtitle">AI-powered statistical analysis for optimal weekend bets</p>
+    </header>
+
+    <div class="controls">
+      <div class="control-group">
+        <label>Select Weekend</label>
+        <select id="weekendSelect" onchange="handleWeekendChange()">
+          <option value="this">This Weekend</option>
+          <option value="next">Next Weekend</option>
+          <option value="custom">Custom Date</option>
+        </select>
+      </div>
+
+      <div id="customDateGroup" class="control-group" style="display: none;">
+        <label>Date</label>
+        <input type="date" id="customDate" onchange="handleDateChange()">
+      </div>
+
+      <div class="control-group">
+        <label>League</label>
+        <select id="leagueSelect" onchange="applyFilters()">
+          <option value="all">All Leagues</option>
+          <option value="Premier League">Premier League</option>
+          <option value="La Liga">La Liga</option>
+          <option value="Serie A">Serie A</option>
+          <option value="Bundesliga">Bundesliga</option>
+          <option value="Ligue 1">Ligue 1</option>
+          <option value="Liga Portugal">Liga Portugal</option>
+        </select>
+      </div>
+
+      <div class="control-group">
+        <label>Minimum Confidence</label>
+        <select id="confidenceSelect" onchange="applyFilters()">
+          <option value="all">All Bets</option>
+          <option value="strong">Strong Only</option>
+          <option value="medium">Medium+</option>
+        </select>
+      </div>
+
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">Total Matches</div>
+        <div class="stat-value" id="totalMatches">0</div>
+        <div class="stat-unit" id="selectedDate">Selected weekend</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Predictions Generated</div>
+        <div class="stat-value" id="totalPredictions">0</div>
+        <div class="stat-unit">High-value bets</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Avg ROI</div>
+        <div class="stat-value" id="avgROI">0%</div>
+        <div class="stat-unit">Expected return</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Strong Confidence</div>
+        <div class="stat-value" id="strongCount">0</div>
+        <div class="stat-unit">High probability</div>
+      </div>
+    </div>
+
+    <div class="predictions-section">
+      <div class="section-title">
+        🎯 Recommended Bets
+        <span id="dataSourceBadge" class="badge" style="font-size:11px;vertical-align:middle;"></span>
+      </div>
+      <div class="filter-buttons">
+        <button class="filter-btn active" data-filter="all"    onclick="applyFilters('all', this)">All</button>
+        <button class="filter-btn"        data-filter="strong" onclick="applyFilters('strong', this)">Strong Only</button>
+        <button class="filter-btn"        data-filter="btts"   onclick="applyFilters('btts', this)">BTTS</button>
+        <button class="filter-btn"        data-filter="over"   onclick="applyFilters('over', this)">Over 2.5</button>
+      </div>
+      <div id="predictionsContainer">
+        <div class="loading">
+          <div class="spinner"></div>
+          <span>Loading matches...</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="predictions-section">
+      <div class="section-title">📊 Bet Confidence Distribution</div>
+      <div class="chart-container">
+        <canvas id="confidenceChart"></canvas>
+      </div>
+    </div>
+
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>

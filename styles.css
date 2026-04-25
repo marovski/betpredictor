@@ -1,0 +1,506 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  color: #e2e8f0;
+  min-height: 100vh;
+  padding: 20px;
+}
+
+.container {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* ── Header ─────────────────────────────────────────────── */
+
+header {
+  text-align: center;
+  margin-bottom: 40px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid #334155;
+}
+
+h1 {
+  font-size: 32px;
+  margin-bottom: 8px;
+  background: linear-gradient(135deg, #60a5fa, #34d399);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.subtitle {
+  color: #cbd5e1;
+  font-size: 14px;
+}
+
+/* ── Controls ────────────────────────────────────────────── */
+
+.controls {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 30px;
+  background: rgba(30, 41, 59, 0.5);
+  padding: 20px;
+  border-radius: 12px;
+  border: 1px solid #334155;
+}
+
+.control-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+select,
+input {
+  padding: 10px 12px;
+  background: #1e293b;
+  border: 1px solid #475569;
+  border-radius: 6px;
+  color: #e2e8f0;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+select:hover,
+input:hover {
+  border-color: #64748b;
+}
+
+select:focus,
+input:focus {
+  outline: none;
+  border-color: #60a5fa;
+  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.1);
+}
+
+/* ── Stats grid ──────────────────────────────────────────── */
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 30px;
+}
+
+.stat-card {
+  background: rgba(30, 41, 59, 0.6);
+  border: 1px solid #334155;
+  border-radius: 10px;
+  padding: 20px;
+  backdrop-filter: blur(10px);
+}
+
+.stat-label {
+  font-size: 12px;
+  color: #94a3b8;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+}
+
+.stat-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: #60a5fa;
+  margin-bottom: 4px;
+}
+
+.stat-unit {
+  font-size: 14px;
+  color: #64748b;
+}
+
+/* ── Predictions section ─────────────────────────────────── */
+
+.predictions-section {
+  margin-bottom: 40px;
+}
+
+.section-title {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 16px;
+  color: #f1f5f9;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ── Bet cards ───────────────────────────────────────────── */
+
+.bet-card {
+  background: rgba(30, 41, 59, 0.6);
+  border: 1px solid #334155;
+  border-left: 4px solid #60a5fa;
+  border-radius: 10px;
+  padding: 20px;
+  margin-bottom: 12px;
+  backdrop-filter: blur(10px);
+  transition: all 0.2s;
+}
+
+.bet-card:hover {
+  border-color: #60a5fa;
+  border-left-color: #60a5fa;
+  box-shadow: 0 0 20px rgba(96, 165, 250, 0.1);
+}
+
+.bet-card.strong { border-left: 4px solid #34d399; }
+.bet-card.medium  { border-left: 4px solid #fbbf24; }
+.bet-card.weak    { border-left: 4px solid #ef4444; }
+
+.bet-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  margin-bottom: 12px;
+}
+
+.bet-match {
+  font-size: 16px;
+  font-weight: 600;
+  color: #f1f5f9;
+}
+
+.bet-confidence {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.confidence-strong {
+  background: rgba(52, 211, 153, 0.2);
+  color: #34d399;
+  border: 1px solid #34d399;
+}
+
+.confidence-medium {
+  background: rgba(251, 191, 36, 0.2);
+  color: #fbbf24;
+  border: 1px solid #fbbf24;
+}
+
+.confidence-weak {
+  background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+  border: 1px solid #ef4444;
+}
+
+/* ── Prediction details ──────────────────────────────────── */
+
+.bet-prediction {
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #475569;
+}
+
+.bet-prediction:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.prediction-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #cbd5e1;
+  margin-bottom: 6px;
+}
+
+.prediction-details {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.odds {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.odds-value {
+  font-size: 16px;
+  font-weight: 700;
+  color: #60a5fa;
+  font-family: 'Courier New', monospace;
+}
+
+.roi {
+  font-size: 12px;
+  padding: 4px 8px;
+  background: rgba(96, 165, 250, 0.1);
+  border-radius: 4px;
+  color: #60a5fa;
+}
+
+.stats-breakdown {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #475569;
+}
+
+.stat-item {
+  font-size: 12px;
+}
+
+.stat-item-label {
+  color: #94a3b8;
+  margin-bottom: 4px;
+}
+
+.stat-item-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: #cbd5e1;
+}
+
+/* ── Filter buttons ──────────────────────────────────────── */
+
+.filter-buttons {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.filter-btn {
+  padding: 8px 16px;
+  background: rgba(30, 41, 59, 0.6);
+  border: 1px solid #475569;
+  border-radius: 6px;
+  color: #cbd5e1;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.filter-btn.active {
+  background: #60a5fa;
+  border-color: #60a5fa;
+  color: #0f172a;
+}
+
+.filter-btn:hover {
+  border-color: #60a5fa;
+}
+
+/* ── Chart ───────────────────────────────────────────────── */
+
+.chart-container {
+  background: rgba(30, 41, 59, 0.6);
+  border: 1px solid #334155;
+  border-radius: 10px;
+  padding: 20px;
+  margin-bottom: 30px;
+  backdrop-filter: blur(10px);
+  max-width: 600px;
+}
+
+/* ── States ──────────────────────────────────────────────── */
+
+.api-error {
+  padding: 20px 24px;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid #ef4444;
+  border-left: 4px solid #ef4444;
+  border-radius: 10px;
+  margin-bottom: 16px;
+}
+
+.api-error-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #ef4444;
+  margin-bottom: 6px;
+}
+
+.api-error-msg {
+  font-size: 13px;
+  color: #fca5a5;
+  margin-bottom: 8px;
+  line-height: 1.5;
+}
+
+.api-error-hint {
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+.no-predictions {
+  text-align: center;
+  padding: 40px 20px;
+  color: #94a3b8;
+  background: rgba(30, 41, 59, 0.6);
+  border: 1px solid #334155;
+  border-radius: 10px;
+}
+
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 40px 20px;
+  color: #60a5fa;
+}
+
+.spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #334155;
+  border-top: 2px solid #60a5fa;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── Badges & misc ───────────────────────────────────────── */
+
+.badge {
+  display: inline-block;
+  padding: 4px 10px;
+  background: rgba(96, 165, 250, 0.2);
+  border: 1px solid #3b82f6;
+  border-radius: 12px;
+  font-size: 11px;
+  color: #60a5fa;
+  margin-right: 6px;
+  margin-top: 8px;
+}
+
+.match-time {
+  font-size: 12px;
+  color: #94a3b8;
+  margin-top: 4px;
+}
+
+/* ── Form badges (W / D / L) ─────────────────────────────── */
+
+.form-row {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin: 12px 0;
+  padding: 10px 0;
+  border-top: 1px solid #334155;
+  border-bottom: 1px solid #334155;
+}
+
+.form-team {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 180px;
+}
+
+.form-label {
+  font-size: 12px;
+  color: #94a3b8;
+  white-space: nowrap;
+  min-width: 90px;
+}
+
+.form-badges {
+  display: flex;
+  gap: 4px;
+}
+
+.form-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.form-w { background: rgba(52, 211, 153, 0.2); color: #34d399; border: 1px solid #34d399; }
+.form-d { background: rgba(148, 163, 184, 0.2); color: #94a3b8; border: 1px solid #475569; }
+.form-l { background: rgba(239,  68,  68, 0.2); color: #ef4444; border: 1px solid #ef4444; }
+
+/* ── Reasoning panel ─────────────────────────────────────── */
+
+.reasoning {
+  margin: 10px 0 4px;
+  padding: 10px 12px;
+  background: rgba(15, 23, 42, 0.5);
+  border-left: 3px solid #334155;
+  border-radius: 6px;
+}
+
+.reasoning-line {
+  font-size: 12px;
+  color: #94a3b8;
+  line-height: 1.7;
+}
+
+.reasoning-line:last-child {
+  color: #cbd5e1;
+  font-weight: 600;
+  margin-top: 4px;
+}
+
+/* ── Probability label in bet card ───────────────────────── */
+
+.odds-label {
+  font-size: 11px;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* ── Responsive ──────────────────────────────────────────── */
+
+@media (max-width: 768px) {
+  h1 {
+    font-size: 24px;
+  }
+
+  .controls {
+    grid-template-columns: 1fr;
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .bet-header {
+    flex-direction: column;
+    gap: 8px;
+  }
+}
