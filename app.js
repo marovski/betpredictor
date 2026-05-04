@@ -398,8 +398,14 @@ function buildPrediction(homeForm, awayForm, h2h, homeName, awayName) {
   let bttsProbability = homeScoreProb * awayScoreProb;
   if (h2h?.games >= 3) bttsProbability = bttsProbability * 0.6 + h2h.bttsRate * 0.4;
 
-  const formAvgGoals   = (homeForm?.avgGoalsScored ?? 1.4) + (awayForm?.avgGoalsScored ?? 1.1);
-  const expectedGoals  = h2h?.games >= 3 ? formAvgGoals * 0.6 + h2h.avgGoals * 0.4 : formAvgGoals;
+  
+  
+// Add a 15% boost to home expected goals and a slight penalty to away
+const homeFormGoals = (homeForm?.avgGoalsScored ?? 1.4) * 1.15; 
+const awayFormGoals = (awayForm?.avgGoalsScored ?? 1.1) * 0.90;
+
+const formAvgGoals = homeFormGoals + awayFormGoals;
+ const expectedGoals  = h2h?.games >= 3 ? formAvgGoals * 0.6 + h2h.avgGoals * 0.4 : formAvgGoals;
   const over25Probability = 1 / (1 + Math.exp(-(expectedGoals - 2.5) * 1.2));
 
   let homeWinProb = homeForm?.winRate ?? 0.45;
