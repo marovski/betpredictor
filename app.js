@@ -14,6 +14,7 @@ const ESPN_LEAGUES = [
   { code: 'ger.1', name: 'Bundesliga' },
   { code: 'fra.1', name: 'Ligue 1' },
   { code: 'por.1', name: 'Liga Portugal' },
+  { code: 'UEFA.1', name: 'Champions League' },
 ];
 
 // ── ESPN fetch with session cache ──────────────────────────────────────────────
