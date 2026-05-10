@@ -2,6 +2,8 @@
 
 let allMatches = [];
 let currentFilter = 'all';
+let currentSort = 'roi';      // roi | confidence | probability | time
+let currentTeamSearch = '';   // filter by team name substring
 let confidenceChart = null;
 
 // ── ESPN config ────────────────────────────────────────────────────────────────
@@ -37,6 +39,22 @@ async function espnFetch(url, cacheKey = null) {
 
   if (cacheKey) sessionStorage.setItem(cacheKey, JSON.stringify(data));
   return data;
+}
+
+// ── Scoreboard fetch helper (DRY — used by loadMatches, loadHistorical, H2H) ────
+
+async function fetchLeagueScoreboards(leagues, dateStr, cacheKeyPrefix) {
+  const results = await Promise.allSettled(
+    leagues.map(league =>
+      espnFetch(
+        `${ESPN_BASE}/${league.code}/scoreboard?dates=${dateStr}`,
+        `${cacheKeyPrefix}_${league.code}_${dateStr}`
+      ).then(data => extractESPNFixtures(data, league.name, league.code))
+    )
+  );
+  return results
+    .filter(r => r.status === 'fulfilled')
+    .flatMap(r => r.value);
 }
 
 // ── Data source badge ──────────────────────────────────────────────────────────
@@ -105,6 +123,11 @@ function loadWeekendMatches(weekendType) {
 
 // ── Main data loader ───────────────────────────────────────────────────────────
 
+/**
+ * Loads fixtures for a given date from all ESPN leagues.
+ * Enriches with form/H2H analysis and displays predictions.
+ * @param {Date} date - The date to fetch fixtures for
+ */
 async function loadMatchesForDate(date) {
   const container = document.getElementById('predictionsContainer');
   document.getElementById('selectedDate').textContent =
@@ -114,20 +137,7 @@ async function loadMatchesForDate(date) {
 
   try {
     const dateStr = formatDate(date);
-
-    // Fetch all 6 leagues in parallel — no API key or rate limits
-    const results = await Promise.allSettled(
-      ESPN_LEAGUES.map(league =>
-        espnFetch(
-          `${ESPN_BASE}/${league.code}/scoreboard?dates=${dateStr}`,
-          `espn_${league.code}_${dateStr}`
-        ).then(data => extractESPNFixtures(data, league.name, league.code))
-      )
-    );
-
-    const fixtures = results
-      .filter(r => r.status === 'fulfilled')
-      .flatMap(r => r.value);
+    const fixtures = await fetchLeagueScoreboards(ESPN_LEAGUES, dateStr, 'espn');
 
     if (fixtures.length === 0) {
       setDataSourceBadge(false);
@@ -205,27 +215,14 @@ async function loadHistoricalMatches() {
     return;
   }
 
-  // 3. Fetch last 5 weekends (10 dates); each date fetches all 6 leagues in parallel
+  // 3. Fetch last 5 weekends (10 dates); each date fetches all leagues in parallel
   const dates = getPastWeekendDates(5);
   historicalMatches = [];
 
   for (const date of dates) {
     const dateStr = formatDate(date);
-    const results = await Promise.allSettled(
-      ESPN_LEAGUES.map(league =>
-        espnFetch(
-          `${ESPN_BASE}/${league.code}/scoreboard?dates=${dateStr}`,
-          `espn_${league.code}_${dateStr}`
-        ).then(data => extractESPNFixtures(data, league.name, league.code))
-      )
-    );
-
-    const dayMatches = results
-      .filter(r => r.status === 'fulfilled')
-      .flatMap(r => r.value)
-      .filter(m => m.completed);   // only finished matches for form/H2H analysis
-
-    historicalMatches.push(...dayMatches);
+    const dayMatches = await fetchLeagueScoreboards(ESPN_LEAGUES, dateStr, 'espn');
+    historicalMatches.push(...dayMatches.filter(m => m.completed));
   }
 
   sessionStorage.setItem(HISTORICAL_CACHE_KEY, JSON.stringify(historicalMatches));
@@ -290,6 +287,12 @@ async function fetchTeamScheduleH2H(homeId, awayId, leagueCode) {
 
 // ── Fixture enrichment ─────────────────────────────────────────────────────────
 
+/**
+ * Enriches a fixture with form analysis, H2H stats, and predictions.
+ * Form derived from historical ESPN data; H2H from team schedules.
+ * @param {Object} fixture - ESPN fixture object
+ * @returns {Promise<Object>} - Enriched fixture with form, H2H, prediction, confidence, ROI
+ */
 async function enrichFixture(fixture) {
   const { homeId, awayId, homeTeam, awayTeam } = fixture;
 
@@ -392,6 +395,17 @@ function analyzeH2H(matches) {
 
 // ── Prediction engine ──────────────────────────────────────────────────────────
 
+/**
+ * Builds a prediction across BTTS, Over 2.5, Home/Away Win.
+ * Blends form (60%) + H2H (40%) when sufficient H2H data available.
+ * Returns highest ROI bet.
+ * @param {Object} homeForm - Form analysis for home team (or null)
+ * @param {Object} awayForm - Form analysis for away team (or null)
+ * @param {Object} h2h - H2H analysis (or null)
+ * @param {string} homeName - Home team name
+ * @param {string} awayName - Away team name
+ * @returns {Object} - { type, probability, roi, confidence, reasoning }
+ */
 function buildPrediction(homeForm, awayForm, h2h, homeName, awayName) {
   const homeScoreProb = homeForm?.scoringRate  ?? 0.60;
   const awayScoreProb = awayForm?.scoringRate  ?? 0.60;
@@ -549,6 +563,7 @@ function applyFilters(filter = currentFilter, btn = null) {
 
   const leagueFilter     = document.getElementById('leagueSelect').value;
   const confidenceFilter = document.getElementById('confidenceSelect').value;
+  const teamSearch       = (document.getElementById('teamSearch')?.value || '').toLowerCase().trim();
 
   const filtered = allMatches.filter(match => {
     const leagueMatch = leagueFilter === 'all' || match.league === leagueFilter;
@@ -558,10 +573,41 @@ function applyFilters(filter = currentFilter, btn = null) {
       (currentFilter === 'strong' && match.confidence === 'strong') ||
       (currentFilter === 'btts'   && match.prediction.type.includes('BTTS')) ||
       (currentFilter === 'over'   && match.prediction.type.includes('Over'));
-    return leagueMatch && confMatch && typeMatch;
+    const teamMatch   = !teamSearch ||
+      match.homeTeam.toLowerCase().includes(teamSearch) ||
+      match.awayTeam.toLowerCase().includes(teamSearch);
+
+    return leagueMatch && confMatch && typeMatch && teamMatch;
   });
 
-  renderMatches(filtered);
+  // Apply sorting
+  const sorted = sortMatches(filtered);
+  renderMatches(sorted);
+}
+
+function sortMatches(matches) {
+  const sort = document.getElementById('sortSelect')?.value || 'roi';
+
+  const sorted = [...matches];
+  sorted.sort((a, b) => {
+    switch (sort) {
+      case 'roi':
+        return parseFloat(b.roi) - parseFloat(a.roi);
+      case 'confidence':
+        const confOrder = { strong: 3, medium: 2, weak: 1 };
+        return (confOrder[b.confidence] || 0) - (confOrder[a.confidence] || 0);
+      case 'probability':
+        return parseFloat(b.prediction.probability) - parseFloat(a.prediction.probability);
+      case 'time':
+        const timeA = a.time === '—' ? '99:99' : a.time;
+        const timeB = b.time === '—' ? '99:99' : b.time;
+        return timeA.localeCompare(timeB);
+      default:
+        return 0;
+    }
+  });
+
+  return sorted;
 }
 
 function renderMatches(filtered) {

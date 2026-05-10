@@ -40,6 +40,7 @@
           <option value="Bundesliga">Bundesliga</option>
           <option value="Ligue 1">Ligue 1</option>
           <option value="Liga Portugal">Liga Portugal</option>
+          <option value="Champions League">Champions League</option>
         </select>
       </div>
 
@@ -50,6 +51,21 @@
           <option value="strong">Strong Only</option>
           <option value="medium">Medium+</option>
         </select>
+      </div>
+
+      <div class="control-group">
+        <label>Sort By</label>
+        <select id="sortSelect" onchange="applyFilters()">
+          <option value="roi">Highest ROI</option>
+          <option value="confidence">Highest Confidence</option>
+          <option value="probability">Highest Probability</option>
+          <option value="time">Kick-off Time</option>
+        </select>
+      </div>
+
+      <div class="control-group">
+        <label>Find Team</label>
+        <input type="text" id="teamSearch" placeholder="Search team name…" oninput="applyFilters()">
       </div>
 
     </div>
