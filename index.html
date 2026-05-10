@@ -4,7 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Football Betting Predictor</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="stylesheet" href="styles.css">
+  
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
 </head>
 <body>
@@ -18,7 +20,7 @@
     <div class="controls">
       <div class="control-group">
         <label>Select Weekend</label>
-        <select id="weekendSelect" onchange="handleWeekendChange()">
+        <select id="weekendSelect">
           <option value="this">This Weekend</option>
           <option value="next">Next Weekend</option>
           <option value="custom">Custom Date</option>
@@ -27,12 +29,12 @@
 
       <div id="customDateGroup" class="control-group" style="display: none;">
         <label>Date</label>
-        <input type="date" id="customDate" onchange="handleDateChange()">
+        <input type="date" id="customDate">
       </div>
 
       <div class="control-group">
         <label>League</label>
-        <select id="leagueSelect" onchange="applyFilters()">
+        <select id="leagueSelect">
           <option value="all">All Leagues</option>
           <option value="Premier League">Premier League</option>
           <option value="La Liga">La Liga</option>
@@ -46,7 +48,7 @@
 
       <div class="control-group">
         <label>Minimum Confidence</label>
-        <select id="confidenceSelect" onchange="applyFilters()">
+        <select id="confidenceSelect">
           <option value="all">All Bets</option>
           <option value="strong">Strong Only</option>
           <option value="medium">Medium+</option>
@@ -55,7 +57,7 @@
 
       <div class="control-group">
         <label>Sort By</label>
-        <select id="sortSelect" onchange="applyFilters()">
+        <select id="sortSelect">
           <option value="roi">Highest ROI</option>
           <option value="confidence">Highest Confidence</option>
           <option value="probability">Highest Probability</option>
@@ -65,7 +67,7 @@
 
       <div class="control-group">
         <label>Find Team</label>
-        <input type="text" id="teamSearch" placeholder="Search team name…" oninput="applyFilters()">
+        <input type="text" id="teamSearch" placeholder="Search team name…">
       </div>
 
     </div>
@@ -104,7 +106,7 @@
         <button class="filter-btn"        data-filter="btts"   onclick="applyFilters('btts', this)">BTTS</button>
         <button class="filter-btn"        data-filter="over"   onclick="applyFilters('over', this)">Over 2.5</button>
       </div>
-      <div id="predictionsContainer">
+      <div id="predictionsContainer" aria-live="polite" role="status">
         <div class="loading">
           <div class="spinner"></div>
           <span>Loading matches...</span>

@@ -2,10 +2,35 @@
 
 let allMatches = [];
 let currentFilter = 'all';
-let currentSort = 'roi';      // roi | confidence | probability | time
-let currentTeamSearch = '';   // filter by team name substring
 let confidenceChart = null;
+const DOM = {
+  weekendSelect: document.getElementById('weekendSelect'),
+  customDate: document.getElementById('customDate'),
+  customDateGroup: document.getElementById('customDateGroup'),
+  leagueSelect: document.getElementById('leagueSelect'),
+  confidenceSelect: document.getElementById('confidenceSelect'),
+  sortSelect: document.getElementById('sortSelect'),
+  teamSearch: document.getElementById('teamSearch'),
+  dataSourceBadge: document.getElementById('dataSourceBadge'),
+  predictionsContainer: document.getElementById('predictionsContainer'),
+  totalMatches: document.getElementById('totalMatches'),
+  totalPredictions: document.getElementById('totalPredictions'),
+  strongCount: document.getElementById('strongCount'),
+  avgROI: document.getElementById('avgROI'),
+  selectedDate: document.getElementById('selectedDate'),
+  confidenceChart: document.getElementById('confidenceChart'),
+};
 
+const FILTER_BUTTONS = document.querySelectorAll('.filter-btn');
+const TEAM_SEARCH_DEBOUNCE_MS = 200;
+
+function debounce(fn, delay) {
+  let timeout = null;
+  return (...args) => {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => fn(...args), delay);
+  };
+}
 // ── ESPN config ────────────────────────────────────────────────────────────────
 
 const ESPN_BASE = 'https://site.api.espn.com/apis/site/v2/sports/soccer';
@@ -96,19 +121,18 @@ function formatDateISO(date) {
 // ── Control handlers ───────────────────────────────────────────────────────────
 
 function handleWeekendChange() {
-  const select = document.getElementById('weekendSelect');
-  const customGroup = document.getElementById('customDateGroup');
-  if (select.value === 'custom') {
-    customGroup.style.display = 'flex';
-    document.getElementById('customDate').value = formatDateISO(new Date());
-  } else {
-    customGroup.style.display = 'none';
-    loadWeekendMatches(select.value);
+  if (DOM.weekendSelect.value === 'custom') {
+    DOM.customDateGroup.style.display = 'flex';
+    DOM.customDate.value = formatDateISO(new Date());
+    return;
   }
+
+  DOM.customDateGroup.style.display = 'none';
+  loadWeekendMatches(DOM.weekendSelect.value);
 }
 
 function handleDateChange() {
-  loadMatchesForDate(new Date(document.getElementById('customDate').value + 'T00:00:00'));
+  loadMatchesForDate(new Date(`${DOM.customDate.value}T00:00:00`));
 }
 
 function loadWeekendMatches(weekendType) {
@@ -205,26 +229,21 @@ const HISTORICAL_CACHE_KEY = 'historicalMatchesESPN_v1';
 let historicalMatches = null;
 
 async function loadHistoricalMatches() {
-  // 1. In-memory
   if (historicalMatches) return;
 
-  // 2. sessionStorage (survives page reload within same tab session)
   const stored = sessionStorage.getItem(HISTORICAL_CACHE_KEY);
   if (stored) {
     historicalMatches = JSON.parse(stored);
     return;
   }
 
-  // 3. Fetch last 5 weekends (10 dates); each date fetches all leagues in parallel
   const dates = getPastWeekendDates(5);
-  historicalMatches = [];
-
-  for (const date of dates) {
+  const allResults = await Promise.all(dates.map(date => {
     const dateStr = formatDate(date);
-    const dayMatches = await fetchLeagueScoreboards(ESPN_LEAGUES, dateStr, 'espn');
-    historicalMatches.push(...dayMatches.filter(m => m.completed));
-  }
+    return fetchLeagueScoreboards(ESPN_LEAGUES, dateStr, 'espn');
+  }));
 
+  historicalMatches = allResults.flat().filter(m => m.completed);
   sessionStorage.setItem(HISTORICAL_CACHE_KEY, JSON.stringify(historicalMatches));
 }
 
@@ -407,44 +426,50 @@ function analyzeH2H(matches) {
  * @returns {Object} - { type, probability, roi, confidence, reasoning }
  */
 function buildPrediction(homeForm, awayForm, h2h, homeName, awayName) {
-  const homeScoreProb = homeForm?.scoringRate  ?? 0.60;
-  const awayScoreProb = awayForm?.scoringRate  ?? 0.60;
+  const homeScoreProb = homeForm?.scoringRate ?? 0.60;
+  const awayScoreProb = awayForm?.scoringRate ?? 0.60;
   let bttsProbability = homeScoreProb * awayScoreProb;
-  if (h2h?.games >= 3) bttsProbability = bttsProbability * 0.6 + h2h.bttsRate * 0.4;
 
-  
-  
-// Add a 15% boost to home expected goals and a slight penalty to away
-const homeFormGoals = (homeForm?.avgGoalsScored ?? 1.4) * 1.15; 
-const awayFormGoals = (awayForm?.avgGoalsScored ?? 1.1) * 0.90;
+  if (h2h?.games >= 3) {
+    bttsProbability = bttsProbability * 0.6 + h2h.bttsRate * 0.4;
+  }
 
-const formAvgGoals = homeFormGoals + awayFormGoals;
- const expectedGoals  = h2h?.games >= 3 ? formAvgGoals * 0.6 + h2h.avgGoals * 0.4 : formAvgGoals;
+  const homeFormGoals = (homeForm?.avgGoalsScored ?? 1.4) * 1.15;
+  const awayFormGoals = (awayForm?.avgGoalsScored ?? 1.1) * 0.90;
+  const formAvgGoals = homeFormGoals + awayFormGoals;
+  const expectedGoals = h2h?.games >= 3 ? formAvgGoals * 0.6 + h2h.avgGoals * 0.4 : formAvgGoals;
   const over25Probability = 1 / (1 + Math.exp(-(expectedGoals - 2.5) * 1.2));
 
   let homeWinProb = homeForm?.winRate ?? 0.45;
   let awayWinProb = awayForm?.winRate ?? 0.30;
+
   if (h2h?.games >= 3) {
     homeWinProb = homeWinProb * 0.6 + h2h.homeWinRate * 0.4;
     awayWinProb = awayWinProb * 0.6 + h2h.awayWinRate * 0.4;
   }
 
   const bets = [
-    { type: 'BTTS Yes',          prob: bttsProbability,   odds: 1.80 },
-    { type: 'Over 2.5',          prob: over25Probability, odds: 1.85 },
-    { type: `${homeName} Win`,   prob: homeWinProb,       odds: 2.10 },
-    { type: `${awayName} Win`,   prob: awayWinProb,       odds: 2.80 },
+    { type: 'BTTS Yes',        prob: bttsProbability,   odds: 1.80 },
+    { type: 'Over 2.5',        prob: over25Probability, odds: 1.85 },
+    { type: `${homeName} Win`, prob: homeWinProb,       odds: 2.10 },
+    { type: `${awayName} Win`, prob: awayWinProb,       odds: 2.80 },
   ];
-  bets.forEach(b => { b.roi = (b.prob * b.odds - 1) * 100; });
+
+  bets.forEach(bet => {
+    bet.roi = (bet.prob * bet.odds - 1) * 100;
+  });
+
   bets.sort((a, b) => b.roi - a.roi);
   const best = bets[0];
+  const probability = Number((best.prob * 100).toFixed(0));
+  const roi = Math.max(0, best.roi);
 
   return {
-    type:        best.type,
-    probability: (best.prob * 100).toFixed(0),
-    roi:         Math.max(0, best.roi).toFixed(1),
-    confidence:  best.prob >= 0.65 ? 'strong' : best.prob >= 0.52 ? 'medium' : 'weak',
-    reasoning:   buildReasoning(homeName, awayName, homeForm, awayForm, h2h, best),
+    type: best.type,
+    probability: probability.toString(),
+    roi: roi.toFixed(1),
+    confidence: best.prob >= 0.65 ? 'strong' : best.prob >= 0.52 ? 'medium' : 'weak',
+    reasoning: buildReasoning(homeName, awayName, homeForm, awayForm, h2h, best),
   };
 }
 
@@ -472,6 +497,12 @@ const TEAMS = {
 };
 
 function pickRandom(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+function generateId() {
+  return typeof crypto?.randomUUID === 'function'
+    ? crypto.randomUUID()
+    : `mock-${Math.random().toString(36).slice(2, 10)}`;
+}
 
 function generateMockForm() {
   const games = 5, wins = Math.floor(Math.random() * 4);
@@ -514,7 +545,7 @@ function generateMockMatches() {
       const homeForm = generateMockForm(), awayForm = generateMockForm(), h2h = generateMockH2H();
       const prediction = buildPrediction(homeForm, awayForm, h2h, homeTeam, awayTeam);
       allMatches.push({
-        id: Math.random(), league, homeTeam, awayTeam,
+        id: generateId(), league, homeTeam, awayTeam,
         time: `${Math.floor(Math.random() * 12) + 10}:${String(Math.floor(Math.random() * 6) * 10).padStart(2, '0')}`,
         homeForm, awayForm, h2h, prediction, confidence: prediction.confidence, roi: prediction.roi,
       });
@@ -727,6 +758,18 @@ function updateChart(filtered) {
 
 // ── Init ───────────────────────────────────────────────────────────────────────
 
-window.addEventListener('load', () => {
+function setupEventListeners() {
+  DOM.weekendSelect.addEventListener('change', handleWeekendChange);
+  DOM.customDate.addEventListener('change', handleDateChange);
+  DOM.leagueSelect.addEventListener('change', () => applyFilters('all'));
+  DOM.confidenceSelect.addEventListener('change', () => applyFilters('all'));
+  DOM.sortSelect.addEventListener('change', () => applyFilters('all'));
+  DOM.teamSearch.addEventListener('input', debounce(() => applyFilters('all'), TEAM_SEARCH_DEBOUNCE_MS));
+  FILTER_BUTTONS.forEach(button => button.addEventListener('click', () => applyFilters(button.dataset.filter, button)));
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  DOM.customDate.value = formatDateISO(new Date());
+  setupEventListeners();
   loadWeekendMatches('this');
 });
